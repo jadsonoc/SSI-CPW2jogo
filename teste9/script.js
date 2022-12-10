@@ -1,5 +1,6 @@
-
 var cursor = document.querySelector('.cursor');
+var body = document.body;
+var easyMode = false;
 
 document.addEventListener('mousemove', function (mMoveEvt) {
     let xPos = mMoveEvt.pageX;
@@ -7,6 +8,11 @@ document.addEventListener('mousemove', function (mMoveEvt) {
     cursor.style.left = xPos + 'px';
     cursor.style.top = yPos + 'px';
 })
+
+const menuCanvas = document.getElementById('menuCanvas');
+const menuCtx = menuCanvas.getContext('2d');
+menuCanvas.width = window.innerWidth;
+menuCanvas.height = window.innerHeight;
 
 const canvas = document.getElementById('canvas1');
 const ctx = canvas.getContext('2d');
@@ -20,8 +26,8 @@ collisionCanvas.height = window.innerHeight;
 
 const PrimaryColors = {
     red: 'red',
-    yellow: 1,
-    blue: 2,
+    yellow: '#ffff00',
+    blue: '#4f6000'
 };
 
 const SecondaryColors = {
@@ -30,7 +36,9 @@ const SecondaryColors = {
     violet: 2,
 };
 
-ctx.font = '50px Impact';
+
+let level = 1;
+let bombs = 2;
 let score = 0;
 let gameOver = false; 
 
@@ -42,13 +50,16 @@ let barrierColor = '';
 let enemies = [];
 let barriers = [];
 
+
 class Barrier {
     constructor() {
         this.colors = ['orange', 'green', 'purple'];
         this.colors.sort(() => .5 - Math.random());
-        this.barrierColor = this.colors[0];
-        this.sound = new Audio();
-        this.sound.src = 'crossBarrier.wav';
+        this.color = this.colors[0];
+        this.coinSound = new Audio();
+        this.coinSound.src = 'plus_up.wav';
+        this.failSound = new Audio();
+        this.failSound.src = 'end.wav';
     }
 
     draw() {  
@@ -56,12 +67,17 @@ class Barrier {
         ctx.fillRect(0, 0, 40, 1000);
     }
 
-    sound() {
-        this.sound.play();
+    playCoinSound() {
+        this.coinSound.play();
+    }
+
+    playFailSound() {
+        this.failSound.play();
     }
 }
 
 barriers.push(new Barrier());
+barrierColor = barriers[0].color;
 
 class Ball {
     constructor() {
@@ -82,9 +98,9 @@ class Ball {
         this.flapInterval = Math.random() * 50 + 50;
         this.randomColors = [Math.floor(Math.random() * 255), Math.floor(Math.random() * 255), Math.floor(Math.random() * 255)];
         this.color = 'rgb(' + this.randomColors[0] + ',' + this.randomColors[1] + ',' + this.randomColors[2] + ')';
-        if (barriers[0].barrierColor == 'orange') {
+        if (barrierColor == 'orange') {
             this.colors = ['red', 'yellow'];
-        } else if (barriers[0].barrierColor == 'green') {
+        } else if (barrierColor == 'green') {
             this.colors = ['blue', 'yellow'];
         } else {
             this.colors = ['red', 'blue'];
@@ -101,24 +117,24 @@ class Ball {
         if (this.y < 0 || this.y > canvas.height - this.height) {
             this.directionY = this.directionY * -1;
         }
-        this.x -= this.directionX;
-        this.y += this.directionY;
+        if (easyMode) {
+            this.x -= (this.directionX/1.5);
+            this.y += (this.directionY/2);
+        } else {
+            this.x -= this.directionX;
+            this.y += this.directionY;
+        }
         if (this.x < 0 - this.width) this.markedForDeletion = true;
-        /*
-        this.timeSinceFlap += deltaTime;
-        if (this.timeSinceFlap > this.flapInterval) {
-            if (this.frame > this.maxFrame)
-                this.frame = 0;
-            else this.frame++;
-            this.timeSinceFlap = 0;
-        }
-        */
         
-        if (this.x < (0 - this.width) && this.realColor == barriers[0].barrierColor) {
+        if (this.x < (0 - this.width) && this.realColor == barrierColor) {
             score++;
+            barriers[0].playCoinSound();
         }
-        if (this.x < (0 - this.width) && this.realColor != barriers[0].barrierColor)
+        if (this.x < (0 - this.width) && this.realColor != barrierColor) {
             gameOver = true;
+            barriers[0].playFailSound();
+        }
+
      
     }
 
@@ -171,11 +187,12 @@ class Explosion {
 
 
 
-function drawScore() {
+function drawScoreBoard() {
+    ctx.font = '28px Impact';
     ctx.fillStyle = 'black';
-    ctx.fillText('Pontos: ' + score, 50, 75);
-    ctx.fillStyle = 'white';
-    ctx.fillText('Pontos: ' + score, 55, 80);
+    ctx.fillText('Bombas: ' + bombs + ' | Pontos: ' + score, 60, 35);
+    ctx.fillStyle = 'lightgreen';
+    ctx.fillText('Bombas: ' + bombs + ' | Pontos: ' + score, 62, 37);
 }
 
 function drawGameOver() {
@@ -186,12 +203,25 @@ function drawGameOver() {
     ctx.fillText('GAME OVER, você fez ' + score + ' pontos', canvas.width / 2 + 5, canvas.height / 2 + 5 ); 
 }
 
+function drawTips() {
+    let tipImage = new Image();
+    if (barrierColor == 'green')
+        tipImage.src = './images/byg_p.png'
+    else if (barrierColor == 'orange') 
+        tipImage.src = './images/yro_p.png'
+    else if (barrierColor == 'purple') 
+        tipImage.src = './images/rbp_p.png'
+    ctx.drawImage(tipImage, canvas.width-tipImage.width-20, 20, tipImage.width, tipImage.height);
+}
+
 window.addEventListener('click', function (clickEvent) {
     const detectPixelColor = collisionCtx.getImageData(clickEvent.x, clickEvent.y, 1, 1);
     const pixelColor = detectPixelColor.data;
     //Verifica colisao pela cor
     enemies.forEach(enemy => {
         if (enemy.randomColors[0] === pixelColor[0] && enemy.randomColors[1] === pixelColor[1] && enemy.randomColors[2] === pixelColor[2]) {
+            const enemyOriginalColor = enemy.realColor;
+
             if (enemy.realColor == 'red' && cursor.style.background == 'yellow') {
                 enemy.image.src = './images/orange.png';
                 enemy.realColor = 'orange';
@@ -217,25 +247,50 @@ window.addEventListener('click', function (clickEvent) {
                 enemy.realColor = 'purple';
                 enemy.playSound();
             }
-            
-            if (barriers[0].barrierColor == 'purple') {
+
+    
+            if (barrierColor == 'purple') {
                 if (enemy.realColor == 'green' || enemy.realColor == 'orange') {
-                    explosions.push(new Explosion(enemy.x, enemy.y, enemy.width));
-                    enemy.markedForDeletion = true;
-                    score--;
-                }
-            } else if (barriers[0].barrierColor == 'orange') {
+                    if (bombs > 0) {
+                        explosions.push(new Explosion(enemy.x, enemy.y, enemy.width));
+                        enemy.markedForDeletion = true;
+                        bombs--;
+                    } else {
+                        let errorSound = new Audio();
+                        errorSound.src = 'error.mp3';
+                        errorSound.play();
+                        enemy.realColor = enemyOriginalColor;
+                        enemy.image.src = `./images/${enemyOriginalColor}.png`;
+                    }
+                }  
+            } else if (barrierColor == 'orange') {
                 if (enemy.realColor == 'green' || enemy.realColor == 'purple') {
-                    explosions.push(new Explosion(enemy.x, enemy.y, enemy.width));
-                    enemy.markedForDeletion = true;
-                    score--;
+                    if (bombs > 0) {
+                        explosions.push(new Explosion(enemy.x, enemy.y, enemy.width));
+                        enemy.markedForDeletion = true;
+                        bombs--;
+                    } else {
+                        let errorSound = new Audio();
+                        errorSound.src = 'error.mp3';
+                        errorSound.play();
+                        enemy.realColor = enemyOriginalColor;
+                        enemy.image.src = `./images/${enemyOriginalColor}.png`;
+                    }
                 }
             }
-            else if (barriers[0].barrierColor == 'green') {
+            else if (barrierColor == 'green') {
                 if (enemy.realColor == 'orange' || enemy.realColor == 'purple') {
-                    explosions.push(new Explosion(enemy.x, enemy.y, enemy.width));
-                    enemy.markedForDeletion = true;
-                    score--;
+                    if (bombs > 0) {
+                        explosions.push(new Explosion(enemy.x, enemy.y, enemy.width));
+                        enemy.markedForDeletion = true;
+                        bombs--;
+                    } else {
+                        let errorSound = new Audio();
+                        errorSound.src = 'error.mp3';
+                        errorSound.play();
+                        enemy.realColor = enemyOriginalColor;
+                        enemy.image.src = `./images/${enemyOriginalColor}.png`;
+                    }
                 }
             }
 
@@ -247,13 +302,13 @@ window.addEventListener('click', function (clickEvent) {
 })
 
 const keys = {
-    r: {
+    a: {
         pressed: false
     },
-    g: {
+    s: {
         pressed: false
     },
-    b: {
+    d: {
         pressed: false
     }
 }
@@ -262,16 +317,40 @@ window.addEventListener("keydown", e => {
     let key = e.key;
     switch (key) {
         case "a":
-            keys.r.pressed = true;
+        case "A":
+            keys.a.pressed = true;
             cursor.style.background = 'yellow';
+            if (barrierColor == 'purple') {
+                body.style.cursor = 'url(images/bomb3.cur), default';
+                cursor.style.display = 'none';
+            } else {
+                body.style.cursor = 'none';
+                cursor.style.display = 'block';
+            }
             break;
         case "s":
-            keys.g.pressed = true;
+        case "S":
+            keys.s.pressed = true;
             cursor.style.background = 'red';
+            if (barrierColor == 'green') {
+                body.style.cursor = 'url(images/bomb3.cur), default';
+                cursor.style.display = 'none';
+            } else {
+                body.style.cursor = 'none';
+                cursor.style.display = 'block';
+            }
             break;
         case "d":
-            keys.b.pressed = true;
+        case "D":
+            keys.d.pressed = true;
             cursor.style.background = 'blue';
+            if (barrierColor == 'orange') {
+                body.style.cursor = 'url(images/bomb3.cur), default';
+                cursor.style.display = 'none';
+            } else {
+                body.style.cursor = 'none';
+                cursor.style.display = 'block';
+            }
             break;
     }
 });
@@ -280,25 +359,24 @@ window.addEventListener("keyup", e => {
     let key = e.key;
 
     switch (key) {
-        case "ArrowLeft":
+        case "A":
         case "a":
             keys.a.pressed = false;
             break;
-        case "ArrowRight":
+        case "S":
         case "s":
-            keys.d.pressed = false;
+            keys.s.pressed = false;
             break;
-        case "ArrowUp":
+        case "D":
         case "d":
-            keys.w.pressed = false;
+            keys.d.pressed = false;
             break;
     }
 });
 
-
-
 //Funcao para as ocorrencias ficarem constante independente do poder de processamento
-function animate(timeStamp) {
+function game(timeStamp) {
+    menuCtx.clearRect(0, 0, menuCanvas.width, menuCanvas.height);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     collisionCtx.clearRect(0, 0, canvas.width, canvas.height);
     let deltaTime = timeStamp - lastTime;
@@ -306,19 +384,54 @@ function animate(timeStamp) {
     timeToNextEnemy += deltaTime;
     if (timeToNextEnemy > enemyInterval) {
         enemies.push(new Ball());
-        timeToNextEnemy = 0;
+        if (easyMode)
+            timeToNextEnemy = -2500;
+        else 
+            timeToNextEnemy = 0;
         enemies.sort(function (a, b) {
             return a.width - b.width; 
         })
     };
-    drawScore();
+    if (easyMode) drawTips();
+    drawScoreBoard();
     //Array literal and spread operator
     [...enemies, ...explosions].forEach(enemy => enemy.update(deltaTime));
-    [...barriers, ...enemies, ...explosions].forEach(enemy => enemy.draw());
+    [ ...enemies, ...explosions].forEach(enemy => enemy.draw());
+    barriers[0].draw();
     enemies = enemies.filter(enemy => !enemy.markedForDeletion);
     explosions = explosions.filter(explosion => !explosion.markedForDeletion);
-    if (!gameOver) requestAnimationFrame(animate);
+    if (!gameOver) requestAnimationFrame(game);
     else drawGameOver();
 }
 
-animate(0);
+
+function menu() {
+    const imgBackground = new Image();
+    imgBackground.src = './images/bkg.jpg';
+    const imgMenu = new Image();
+    imgMenu.src = './images/aquarela3.png';
+    menuCtx.clearRect(0, 0, menuCanvas.width, menuCanvas.height);
+    menuCtx.drawImage(imgBackground, 0, 0, menuCanvas.width, menuCanvas.height);
+    menuCtx.drawImage(imgMenu, menuCanvas.width/3, menuCanvas.height/5, 500, 500);
+    requestAnimationFrame(menu);
+
+    window.addEventListener('click', function (clickEvent) {
+        const detectPixelColor = menuCtx.getImageData(clickEvent.x, clickEvent.y, 3, 3);
+        const pixelColor = detectPixelColor.data;
+        if (pixelColor[0] >= 200 && pixelColor[0] < 250) {
+            body.style.cursor = 'none';
+            cursor.style.display = 'block';
+            document.getElementById('menuCanvas').style.display = 'none';
+            game(0);
+        } else if (pixelColor[0] >= 110 && pixelColor[0] < 180) {
+            body.style.cursor = 'none';
+            cursor.style.display = 'block';
+            document.getElementById('menuCanvas').style.display = 'none';
+            easyMode = true;
+            game(0);
+        }
+    })
+//f5de2c c71859
+}
+
+menu();

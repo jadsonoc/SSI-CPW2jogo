@@ -3,7 +3,7 @@ body {
     width: 100vw;
     height: 100vh;
     overflow: hidden;
-    cursor: none;
+    cursor: default;
 }
 
 canvas {
@@ -18,11 +18,15 @@ canvas {
     opacity: 0;
 }
 
+#menuCanvas {
+    display: block;
+}
+
 .cursor {
     width: 30px;
     height: 30px;
-    display: block;
+    display: none;
     border-radius: 70px 5px 70px 70px;
     position: absolute;
-    background: yellowgreen;
+    background: black;
 }
