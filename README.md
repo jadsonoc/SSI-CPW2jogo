@@ -9,6 +9,8 @@
 #### As teclas "a", "s" e "d" do teclado têm o poder de mudar a cor do seu cursor ou disponibilizar uma bomba para detornar as Colorballs que escaparem.
 #### Prepare sua palheta de cores, seja rápido e boa diversão!
 
+Acesse a release 01 do game aqui: https://jadsonoc.github.io/SSI-CPW2jogo/release01/
+
 ### Nessa primeira release, Level 01, são apresentadas as cores primárias para geração de cores secundárias.
 
 #### A imagem abaixo apresenta o menu principal do Game.
