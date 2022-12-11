@@ -2,6 +2,11 @@ var cursor = document.querySelector('.cursor');
 var body = document.body;
 var easyMode = false;
 
+const environmentSound = new Audio();
+environmentSound.src = 'soundMenu.flac';
+environmentSound.volume = 0.8;
+environmentSound.play();
+
 document.addEventListener('mousemove', function (mMoveEvt) {
     let xPos = mMoveEvt.pageX;
     let yPos = mMoveEvt.pageY;
@@ -14,7 +19,7 @@ const menuCtx = menuCanvas.getContext('2d');
 menuCanvas.width = window.innerWidth;
 menuCanvas.height = window.innerHeight;
 
-const canvas = document.getElementById('canvas1');
+const canvas = document.getElementById('mainCanvas');
 const ctx = canvas.getContext('2d');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
@@ -38,7 +43,7 @@ const SecondaryColors = {
 
 
 let level = 1;
-let bombs = 2;
+let bombs = 10;
 let score = 0;
 let gameOver = false; 
 
@@ -49,7 +54,6 @@ let barrierColor = '';
 
 let enemies = [];
 let barriers = [];
-
 
 class Barrier {
     constructor() {
@@ -111,9 +115,10 @@ class Ball {
         this.radius = Math.random() * this.sizeModifier;
         this.sound = new Audio();
         this.sound.src = 'paint.wav';
+        this.sound.volume = 0.1;
     }
 
-    update(deltaTime) {
+    update(calculatedTime) {
         if (this.y < 0 || this.y > canvas.height - this.height) {
             this.directionY = this.directionY * -1;
         }
@@ -127,15 +132,13 @@ class Ball {
         if (this.x < 0 - this.width) this.markedForDeletion = true;
         
         if (this.x < (0 - this.width) && this.realColor == barrierColor) {
-            score++;
+            if (score++ % 10 == 0 && score > 10) bombs++; //AUmenta as bombas quando score for multiplo de 10
             barriers[0].playCoinSound();
         }
         if (this.x < (0 - this.width) && this.realColor != barrierColor) {
             gameOver = true;
             barriers[0].playFailSound();
         }
-
-     
     }
 
     draw() {
@@ -168,9 +171,9 @@ class Explosion {
         this.markedForDeletion = false;
     }
 
-    update(deltaTime) {
+    update(calculatedTime) {
         if (this.frame === 0) this.sound.play();
-        this.timeSinceLastFrame += deltaTime;
+        this.timeSinceLastFrame += calculatedTime;
         if (this.timeSinceLastFrame > this.frameInterval) {
             this.frame++;
             this.timeSinceLastFrame = 0;
@@ -184,22 +187,19 @@ class Explosion {
     }
 }
 
-
-
-
 function drawScoreBoard() {
     ctx.font = '28px Impact';
     ctx.fillStyle = 'black';
-    ctx.fillText('Bombas: ' + bombs + ' | Pontos: ' + score, 60, 35);
+    ctx.fillText('Bombas: ' + bombs + ' | Pontos: ' + score, canvas.width-300, 40);
     ctx.fillStyle = 'lightgreen';
-    ctx.fillText('Bombas: ' + bombs + ' | Pontos: ' + score, 62, 37);
+    ctx.fillText('Bombas: ' + bombs + ' | Pontos: ' + score, canvas.width-302, 42);
 }
 
 function drawGameOver() {
     ctx.textAlign = 'center';
     ctx.fillStyle = 'black';
     ctx.fillText('GAME OVER, você fez ' + score + ' pontos', canvas.width / 2, canvas.height / 2); 
-    ctx.fillStyle = 'white';
+    ctx.fillStyle = 'lightgreen';
     ctx.fillText('GAME OVER, você fez ' + score + ' pontos', canvas.width / 2 + 5, canvas.height / 2 + 5 ); 
 }
 
@@ -211,10 +211,38 @@ function drawTips() {
         tipImage.src = './images/yro_p.png'
     else if (barrierColor == 'purple') 
         tipImage.src = './images/rbp_p.png'
-    ctx.drawImage(tipImage, canvas.width-tipImage.width-20, 20, tipImage.width, tipImage.height);
+    ctx.drawImage(tipImage, canvas.width - tipImage.width - 20, canvas.height - tipImage.height - 20, tipImage.width, tipImage.height);
+    ctx.textAlign = 'center';
+    ctx.font = '18px Impact';
+    ctx.fillStyle = 'red';
+    ctx.fillText("Seu objetivo é combinar as cores deixando as colorballs da mesma cor do portal antes que elas atravessem.", canvas.width / 2, canvas.height - 60);
+    ctx.fillStyle = 'black';
+    ctx.font = '16px Impact';
+    ctx.fillText("Pressione as teclas 'a', 's' ou 'd' para alternar entre as cores e a bomba!", canvas.width / 2, canvas.height - 40);
+    ctx.fillText("Use as bombas para eliminar as colorballs quando não der tempo de combinar as cores.", canvas.width/2, canvas.height-20);
+}
+
+function drawTitle(ctx) {
+    ctx.textAlign = 'center';
+    ctx.font = '120px Kaushan Script, cursive';
+    ctx.globalAlpha = 0.3;
+    ctx.fillStyle = '#3f403a';
+    ctx.fillText("Colorballs", canvas.width / 2, 130);
+    ctx.fillStyle = '#f09123';
+    ctx.fillText("Colorballs", canvas.width / 2 + 2, 132);
+    ctx.fillStyle = '#885d8a';
+    ctx.fillText("Colorballs", canvas.width / 2 + 4, 134);
+    ctx.fillStyle = '#db1313';
+    ctx.fillText("Colorballs", canvas.width / 2 + 6, 136);
+    ctx.fillStyle = '#4172ad';
+    ctx.fillText("Colorballs", canvas.width / 2 + 8, 138);
+    ctx.globalAlpha = 1.0;
 }
 
 window.addEventListener('click', function (clickEvent) {
+    const errorSound = new Audio();
+          errorSound.volume = 0.2;
+          errorSound.src = 'wrong.mp3';
     const detectPixelColor = collisionCtx.getImageData(clickEvent.x, clickEvent.y, 1, 1);
     const pixelColor = detectPixelColor.data;
     //Verifica colisao pela cor
@@ -246,6 +274,8 @@ window.addEventListener('click', function (clickEvent) {
                 enemy.image.src = './images/purple.png';
                 enemy.realColor = 'purple';
                 enemy.playSound();
+            } else if (enemy.realColor == cursor.style.background) {
+                errorSound.play();
             }
 
     
@@ -256,8 +286,6 @@ window.addEventListener('click', function (clickEvent) {
                         enemy.markedForDeletion = true;
                         bombs--;
                     } else {
-                        let errorSound = new Audio();
-                        errorSound.src = 'error.mp3';
                         errorSound.play();
                         enemy.realColor = enemyOriginalColor;
                         enemy.image.src = `./images/${enemyOriginalColor}.png`;
@@ -270,33 +298,24 @@ window.addEventListener('click', function (clickEvent) {
                         enemy.markedForDeletion = true;
                         bombs--;
                     } else {
-                        let errorSound = new Audio();
-                        errorSound.src = 'error.mp3';
                         errorSound.play();
                         enemy.realColor = enemyOriginalColor;
                         enemy.image.src = `./images/${enemyOriginalColor}.png`;
                     }
                 }
-            }
-            else if (barrierColor == 'green') {
+            } else if (barrierColor == 'green') {
                 if (enemy.realColor == 'orange' || enemy.realColor == 'purple') {
                     if (bombs > 0) {
                         explosions.push(new Explosion(enemy.x, enemy.y, enemy.width));
                         enemy.markedForDeletion = true;
                         bombs--;
                     } else {
-                        let errorSound = new Audio();
-                        errorSound.src = 'error.mp3';
                         errorSound.play();
                         enemy.realColor = enemyOriginalColor;
                         enemy.image.src = `./images/${enemyOriginalColor}.png`;
                     }
                 }
             }
-
-            //alert('jesus');
-            //enemy.markedForDeletion = true;
-            //explosions.push(new Explosion(enemy.x, enemy.y, enemy.width));
         }
     })
 })
@@ -321,7 +340,7 @@ window.addEventListener("keydown", e => {
             keys.a.pressed = true;
             cursor.style.background = 'yellow';
             if (barrierColor == 'purple') {
-                body.style.cursor = 'url(images/bomb3.cur), default';
+                body.style.cursor = 'url(images/bomb4.cur), default';
                 cursor.style.display = 'none';
             } else {
                 body.style.cursor = 'none';
@@ -333,7 +352,7 @@ window.addEventListener("keydown", e => {
             keys.s.pressed = true;
             cursor.style.background = 'red';
             if (barrierColor == 'green') {
-                body.style.cursor = 'url(images/bomb3.cur), default';
+                body.style.cursor = 'url(images/bomb4.cur), default';
                 cursor.style.display = 'none';
             } else {
                 body.style.cursor = 'none';
@@ -345,12 +364,15 @@ window.addEventListener("keydown", e => {
             keys.d.pressed = true;
             cursor.style.background = 'blue';
             if (barrierColor == 'orange') {
-                body.style.cursor = 'url(images/bomb3.cur), default';
+                body.style.cursor = 'url(images/bomb4.cur), default';
                 cursor.style.display = 'none';
             } else {
                 body.style.cursor = 'none';
                 cursor.style.display = 'block';
             }
+            break;
+        case "esc":
+            menu();
             break;
     }
 });
@@ -375,13 +397,13 @@ window.addEventListener("keyup", e => {
 });
 
 //Funcao para as ocorrencias ficarem constante independente do poder de processamento
-function game(timeStamp) {
+function game(timeFreeze) {
     menuCtx.clearRect(0, 0, menuCanvas.width, menuCanvas.height);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     collisionCtx.clearRect(0, 0, canvas.width, canvas.height);
-    let deltaTime = timeStamp - lastTime;
-    lastTime = timeStamp
-    timeToNextEnemy += deltaTime;
+    let calculatedTime = timeFreeze - lastTime;
+    lastTime = timeFreeze
+    timeToNextEnemy += calculatedTime;
     if (timeToNextEnemy > enemyInterval) {
         enemies.push(new Ball());
         if (easyMode)
@@ -395,7 +417,7 @@ function game(timeStamp) {
     if (easyMode) drawTips();
     drawScoreBoard();
     //Array literal and spread operator
-    [...enemies, ...explosions].forEach(enemy => enemy.update(deltaTime));
+    [...enemies, ...explosions].forEach(enemy => enemy.update(calculatedTime));
     [ ...enemies, ...explosions].forEach(enemy => enemy.draw());
     barriers[0].draw();
     enemies = enemies.filter(enemy => !enemy.markedForDeletion);
@@ -412,7 +434,8 @@ function menu() {
     imgMenu.src = './images/aquarela3.png';
     menuCtx.clearRect(0, 0, menuCanvas.width, menuCanvas.height);
     menuCtx.drawImage(imgBackground, 0, 0, menuCanvas.width, menuCanvas.height);
-    menuCtx.drawImage(imgMenu, menuCanvas.width/3, menuCanvas.height/5, 500, 500);
+    drawTitle(menuCtx);
+    menuCtx.drawImage(imgMenu, menuCanvas.width / 3, menuCanvas.height / 5, 500, 500);
     requestAnimationFrame(menu);
 
     window.addEventListener('click', function (clickEvent) {
@@ -422,6 +445,7 @@ function menu() {
             body.style.cursor = 'none';
             cursor.style.display = 'block';
             document.getElementById('menuCanvas').style.display = 'none';
+            environmentSound.src = 'soundtrack.mp3';
             game(0);
         } else if (pixelColor[0] >= 110 && pixelColor[0] < 180) {
             body.style.cursor = 'none';
