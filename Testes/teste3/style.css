@@ -1,0 +1,192 @@
+body {
+    margin: 0;
+    padding: 0;
+    background-color: lightgray;
+    font-family: Arial, Helvetica, sans-serif;
+    box-sizing: border-box;
+}
+
+.container {
+    width: 80%;
+    height: 500px;
+    margin: 0 auto;
+    /* display: grid;
+    margin: 100px auto;
+    justify-items: center;
+    border-bottom: solid 4px darkslategray;
+    align-items: end; */
+    background-color: white;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid #333;
+}
+
+
+.hero {
+    width: 200px;
+    position: absolute;
+    bottom: -20px;
+}
+
+.cannon-body {
+    position: absolute;
+    bottom: 55px;
+    left: 130px;
+    border-top: 50px solid transparent;
+    border-right: 60px solid lightblue;
+    border-bottom: 10px solid transparent;
+
+}
+
+.bumping {
+    animation: bumping 1s ease infinite;
+}
+
+.cannon-head {
+    position: absolute;
+    width: 50px;
+    height: 45px;
+    left: 190px;
+    bottom: 60px;
+    shape-outside: circle(50% at 30%);
+    clip-path: circle(50% at 0%);
+    background: yellow;
+    animation: bumping 1s ease infinite;
+}
+
+.rotate-up-body {
+    animation: rotate 4s ease;
+}
+.rotate-up-head {
+    bottom: 80px;
+    left: 190px;
+    animation: rotate 4s ease;
+}
+
+.ammo {
+    position: absolute;
+    width: 50px;
+    height: 45px;
+    bottom: 60px;
+    border-radius: 50%;
+    background: yellow;
+}
+
+.shoot {
+    animation: shoot 1s;
+    animation-iteration-count: 1;
+}
+
+.shoot-curve {
+    animation: shoot-curve 2s ease-in-out;
+    animation-iteration-count: 1;
+}
+
+.ball-1 {
+    width: 200px;
+    height: 200px;
+    bottom: 10px;
+    position: absolute;
+    background-color: blue;
+    border-radius: 50%;
+    right: 0;
+    animation: ball-animation-horizontal 5s infinite;
+}
+
+.ball-2 {
+    width: 100px;
+    height: 100px;
+    bottom: 600px;
+    position: absolute;
+    background-color: orange;
+    border-radius: 50%;
+    right: 0;
+    animation: ball-animation-diagonal 5s infinite;
+}
+
+@keyframes ball-animation-horizontal { 
+    from {
+        right: -150px;
+    } to {
+        right: 100%;
+    }
+}
+
+@keyframes ball-animation-diagonal { 
+    from {
+        right: -300px;
+        bottom: 400px;
+    } to {
+        right: 100%;
+        bottom: 0;
+    }
+}
+
+
+@keyframes shoot {
+    from {
+        left: 190px;
+    } to {
+        left: 120%;
+    }
+}
+
+@keyframes shoot-curve {
+    0% {
+        left: 190px;
+        bottom: 60px;
+      }
+      30% {
+        left: 550px;
+        bottom: 180px;
+      }
+      68%,
+      72% {
+        left: 760px;
+        bottom: 120px;
+      }
+      100% {
+        left: 950px;
+        bottom: 60px;
+      }
+}
+
+@keyframes bumping {
+    000% {transform: scale(1,1) translateY(0);}
+    050% {transform: scale(1.1,0.9) translateY(-1.5px);}
+    100% {transform: scale(1,1) translateY(0);}
+}
+@keyframes rotate {
+    020% {transform: rotate(-45deg);}
+
+    100% {transform: rotate(0);}
+}
+
+@keyframes bounce {
+    000% {transform: scale(1,1) translateY(0);}
+    005% {transform: scale(1.1,0.9) translateY(0);}
+    025% {transform: scale(0.9,1.1) translateY(-200px);}
+    050% {transform: scale(1.1,0.9) translateY(0);}
+    060% {transform: scale(0.9,1.1) translateY(-40px);}
+    070% {transform: scale(1.1,0.9) translateY(0);}
+    100% {transform: scale(1,1) translateY(0);}
+}
+
+@keyframes bounce2 {
+    000% {transform: scale(1,1) translateY(0);}
+    005% {transform: scale(1.1,0.9) translateY(0);}
+    025% {transform: scale(0.9,1.1) translateY(-300px);}
+    050% {transform: scale(1.1,0.9) translateY(0);}
+    060% {transform: scale(0.9,1.1) translateY(-40px);}
+    070% {transform: scale(1.1,0.9) translateY(0);}
+    100% {transform: scale(1,1) translateY(0);}
+}
+
+@keyframes ball-animation-vertical { 
+    from {
+        top: -50px;
+    } to {
+        top: 100%;
+    }
+}
+
